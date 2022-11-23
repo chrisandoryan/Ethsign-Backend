@@ -3,12 +3,13 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var cors = require('cors')
+
 const Web3 = require('web3');
 const contract = require("@truffle/contract");
 const artifacts = require('./build/contracts/OpenSign.json');
 const mongoose = require("mongoose");
 const passport = require('passport');
-var cors = require('cors')
 
 require('dotenv').config()
 require('./lib/auth');
@@ -28,8 +29,9 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(cors())
-app.use('/', indexRouter);
+
 app.use('/users', usersRouter);
+app.use('/', passport.authenticate('jwt', { session: false }), indexRouter);
 
 if (typeof web3 !== 'undefined') {
   var web3 = new Web3(web3.currentProvider)

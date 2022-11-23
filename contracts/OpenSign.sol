@@ -20,9 +20,9 @@ contract OpenSign{
         documents[keccak256(doc_id)] = Document(block.timestamp, ipfs_hash, sender);
     }
 
-    function signDocument(bytes memory id) public {
-        users[msg.sender].push(id);
-        documents[keccak256(id)].signatures.push(msg.sender);
+    function signDocument(bytes memory doc_id) public {
+        users[msg.sender].push(doc_id);
+        documents[keccak256(doc_id)].signatures.push(msg.sender);
     }
     
     function getSignatures(bytes memory doc_id) public view returns (address[] memory) {

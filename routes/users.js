@@ -6,9 +6,19 @@ var ethUtil = require('ethereumjs-util');
 
 var router = express.Router();
 
+router.get('/', async (req, res) => {
+  let users = await User.find({});
+  return res.json({
+    success: true,
+    users: users
+  });
+});
+
+
 router.post('/wallet/check', async (req, res) => {
   let wallet_address = req.body.wallet_address;
   console.log(wallet_address);
+
   let user = await User.findOne({ wallet_address: wallet_address })
   if (user) {
     return res.json({
@@ -19,7 +29,7 @@ router.post('/wallet/check', async (req, res) => {
   }
   else {
     return res.json({
-      success: false,
+      success: true,
       message: 'User cannot be found',
       exists: false
     });
@@ -55,9 +65,9 @@ router.post('/register', async (req, res) => {
 });
 
 router.post('/wallet/nonce', async (req, res) => {
-  // Check if user exists
   let wallet_address = req.body.wallet_address;
   let user = await User.findOne({ wallet_address: wallet_address });
+
   if (user) {
     return res.json({
       success: true,
@@ -72,15 +82,13 @@ router.post('/wallet/nonce', async (req, res) => {
   else {
     return res.json({
       success: false,
-      message: 'Nonce cannot be found',
+      message: 'Nonce is not available',
       user: false
     });
   }
 });
 
-// Process signed message
 router.post('/:wallet_address/signature', (req, res) => {
-  // Get user from db
   User.findOne({wallet_address: req.params.wallet_address}, (err, user) => {
       if (err) {
           res.send(err);
