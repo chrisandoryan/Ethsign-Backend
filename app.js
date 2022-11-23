@@ -6,8 +6,10 @@ var logger = require('morgan');
 const Web3 = require('web3');
 const contract = require("@truffle/contract");
 const artifacts = require('./build/contracts/OpenSign.json');
-const mongoose = require("mongoose")
+const mongoose = require("mongoose");
+const passport = require('passport');
 require('dotenv').config()
+require('./lib/auth');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -43,7 +45,7 @@ async function initApplication(callback) {
       return err;
     }
 
-    console.log("Connected to MongoDB Database.")
+    console.log("Connected to MongoDB Database.");
 
     const accounts = await web3.eth.getAccounts();
     const mongoClient = client;

@@ -1,16 +1,77 @@
 var express = require('express');
+const passport = require('passport');
+const User = require('../database/User');
+
+
 var router = express.Router();
 
-// Get user nonce
-router.get('/:wallet_address/nonce', (req, res) => {
+router.get('/:wallet_address', async (req, res) => {
+  let user = await User.findOne({ wallet_address: req.params.wallet_address })
+  if (user) {
+    return res.status(200).json({
+      message: 'User is found',
+      data: true
+    });
+  }
+  else {
+    return res.status(404).json({
+      message: 'User cannot be found',
+      data: false
+    });
+  }
+});
+
+router.post('/register', async (req, res) => {
+  let user = await User.exists({ email: req.body.email });
+  if (!user) {
+    user = new User();
+    user.email = req.body.email;
+    user.password = req.body.password;
+    user.wallet_address = req.body.wallet_address;
+  
+    await user.save();
+    res.status(200).json({
+      message: 'Signup successful',
+      data: {
+        id: user.id,
+        email: user.email,
+        wallet_address: user.wallet_address,
+      }
+    });
+  }
+  else {
+    res.status(400).json({
+      message: 'User already exists! Please login',
+    });
+  }
+  
+});
+
+router.get('/:wallet_address/nonce', async (req, res) => {
   // Check if user exists
-  // ... search in database for user and returns its current nonce
+  let user = await User.findOne({ wallet_address: req.params.wallet_address });
+  if (user) {
+    return res.status(200).json({
+      message: 'Nonce is available',
+      data: {
+        id: user.id,
+        email: user.email,
+        nonce: user.nonce
+      }
+    });
+  }
+  else {
+    return res.status(404).json({
+      message: 'Nonce cannot be found',
+      data: false
+    });
+  }
 });
 
 // Process signed message
-router.post('/:user/signature', (req, res) => {
+router.post('/:wallet_address/signature', (req, res) => {
   // Get user from db
-  User.findOne({wallet_address: req.params.user}, (err, user) => {
+  User.findOne({wallet_address: req.params.wallet_address}, (err, user) => {
       if (err) {
           res.send(err);
       }
