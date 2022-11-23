@@ -48,19 +48,19 @@ router.post('/upload', multer({
   const openSign = req.app.openSignInstance;
 
   let doc_buffer = req.file.buffer;
+  let file_type = req.file.mimetype;
   let ipfs_response = await ipfs.add(doc_buffer);
-  let ipfs_hash = ipfs_response.cid.multihash.digest;
-  let ipfs_hash_hex = Buffer.from(ipfs_hash.buffer).toString("hex");
-  let doc_id = crypto.randomBytes(32);
-  let doc_id_hex = "0x" + doc_id.toString('hex');
+  let ipfs_cid = ipfs_response.cid;
+  let doc_id = `0x${crypto.randomBytes(32).toString('hex')}`;
 
-  openSign.addDocument(doc_id_hex, ipfs_hash, { from: user.wallet_address })
+  openSign.addDocument(doc_id, ipfs_cid.bytes, { from: user.wallet_address })
     .then(async (_result) => {
       let document = new Document({
-        doc_id: doc_id_hex,
+        doc_id: doc_id,
         doc_title: doc_title,
+        file_type: file_type,
         file_size: req.file.size,
-        ipfs_hash: ipfs_hash_hex,
+        ipfs_hash: ipfs_cid,
         uploader_address: user.wallet_address,
         signer_addresses: signers
       });
@@ -68,8 +68,9 @@ router.post('/upload', multer({
 
       return res.json({
         success: true,
-        doc_id: doc_id_hex,
-        ipfs_hash: ipfs_hash_hex
+        doc_id: doc_id,
+        ipfs_hash: ipfs_cid.path,
+        file_type: file_type
       });
     })
     .catch(err => {
@@ -90,11 +91,24 @@ router.get('/documents/:document_id', async function (req, res, next) {
     uploader_address: user.wallet_address, 
   });
 
-  console.log(document);
-
   if (document) {
-    let ipfs_file = await ipfs.get(document.ipfs_hash);
-    console.log(ipfs_file);
+    try {
+      for await (const buf of ipfs.get(document.ipfs_hash)) {
+        let buffer_file = buf.toString('base64');
+        return res.json({
+          success: true,
+          file_type: document.file_type,
+          document: buffer_file
+        })
+      }      
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to get the requested file from IPFS"
+      });
+    }
+
   }
 });
 
