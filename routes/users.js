@@ -116,7 +116,7 @@ router.post('/:wallet_address/signature', (req, res) => {
 
               // Set jwt token
               const token = jwt.sign({
-                  _id: user._id,
+                  id: user.id,
                   address: user.address
               }, process.env.JWT_SECRET, {expiresIn: '6h'});
 
@@ -132,10 +132,16 @@ router.post('/:wallet_address/signature', (req, res) => {
               });
           } else {
               // User is not authenticated
-              res.status(401).send('Invalid credentials');
+              res.status(401).send({
+                success: false,
+                message: 'Invalid credentials'
+              });
           }
       } else {
-          res.send('User does not exist');
+          res.send({
+            success: false,
+            message: 'User does not exist'
+          });
       }
   });
 });
