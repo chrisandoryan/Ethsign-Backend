@@ -113,16 +113,22 @@ router.post('/:wallet_address/signature', (req, res) => {
                       res.send(err);
                   }
               });
+
               // Set jwt token
               const token = jwt.sign({
                   _id: user._id,
                   address: user.address
               }, process.env.JWT_SECRET, {expiresIn: '6h'});
+
               res.json({
                   success: true,
                   token: `Bearer ${token}`,
-                  user: user,
-                  msg: "You are now logged in."
+                  user: {
+                    id: user.id,
+                    email: user.email,
+                    wallet_address: user.wallet_address
+                  },
+                  message: "You are now logged in."
               });
           } else {
               // User is not authenticated
