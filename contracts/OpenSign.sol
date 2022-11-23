@@ -7,14 +7,17 @@ contract OpenSign{
         bytes ipfs_hash;
         address[] signatures;
     }
-    mapping(address => bytes[]) public users; //maps addresses to agreement id
-    mapping(bytes32 => Document) public documents; //maps keccak256(agreement_id) hashes to documents
 
-    function addDocument(bytes memory id, bytes memory ipfs) public {
-        users[msg.sender].push(ipfs); //Add document to users's "signed" list
+    // mappings   
+    mapping(address => bytes[]) public users; // maps addresses to agreement id
+    mapping(bytes32 => Document) public documents; // maps keccak256(agreement_id) hashes to documents
+
+    function addDocument(bytes memory doc_id, bytes memory ipfs_hash) public {
+        users[msg.sender].push(ipfs_hash); // Add document to users' "signed" list
         address[] memory sender = new address[](1);
         sender[0] = msg.sender;
-        documents[keccak256(id)] = Document(block.timestamp, ipfs, sender);
+
+        documents[keccak256(doc_id)] = Document(block.timestamp, ipfs_hash, sender);
     }
 
     function signDocument(bytes memory id) public {
