@@ -1,7 +1,8 @@
 var express = require('express');
 const passport = require('passport');
+const jwt = require('jsonwebtoken');
 const User = require('../database/User');
-
+var ethUtil = require('ethereumjs-util');
 
 var router = express.Router();
 
@@ -100,11 +101,11 @@ router.post('/:wallet_address/signature', (req, res) => {
               signatureParams.r,
               signatureParams.s
           );
-          const addresBuffer = ethUtil.publicToAddress(publicKey);
-          const address = ethUtil.bufferToHex(addresBuffer);
+          const addressBuffer = ethUtil.publicToAddress(publicKey);
+          const address = ethUtil.bufferToHex(addressBuffer);
 
           // Check if address matches
-          if (address.toLowerCase() === req.params.user.toLowerCase()) {
+          if (address.toLowerCase() === user.wallet_address.toLowerCase()) {
               // Change user nonce
               user.nonce = Math.floor(Math.random() * 1000000);
               user.save((err) => {

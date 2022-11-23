@@ -26,7 +26,7 @@ schema.pre(
     async function (next) {
         const user = this;
         const hash = await bcrypt.hash(this.password, 10);
-        const nonce = crypto.randomBytes(16).toString('base64');
+        const nonce = Math.floor(Math.random() * 1000000);
 
         this.password = hash;
         this.nonce = nonce;
