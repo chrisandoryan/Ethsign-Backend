@@ -5,18 +5,22 @@ const User = require('../database/User');
 
 var router = express.Router();
 
-router.get('/:wallet_address', async (req, res) => {
-  let user = await User.findOne({ wallet_address: req.params.wallet_address })
+router.post('/wallet/check', async (req, res) => {
+  let wallet_address = req.body.wallet_address;
+  console.log(wallet_address);
+  let user = await User.findOne({ wallet_address: wallet_address })
   if (user) {
-    return res.status(200).json({
+    return res.json({
+      success: true,
       message: 'User is found',
-      data: true
+      exists: true
     });
   }
   else {
-    return res.status(404).json({
+    return res.json({
+      success: false,
       message: 'User cannot be found',
-      data: false
+      exists: false
     });
   }
 });
@@ -30,9 +34,10 @@ router.post('/register', async (req, res) => {
     user.wallet_address = req.body.wallet_address;
   
     await user.save();
-    res.status(200).json({
+    res.json({
+      success: true,
       message: 'Signup successful',
-      data: {
+      user: {
         id: user.id,
         email: user.email,
         wallet_address: user.wallet_address,
@@ -41,19 +46,22 @@ router.post('/register', async (req, res) => {
   }
   else {
     res.status(400).json({
+      success: false,
       message: 'User already exists! Please login',
     });
   }
   
 });
 
-router.get('/:wallet_address/nonce', async (req, res) => {
+router.post('/wallet/nonce', async (req, res) => {
   // Check if user exists
-  let user = await User.findOne({ wallet_address: req.params.wallet_address });
+  let wallet_address = req.body.wallet_address;
+  let user = await User.findOne({ wallet_address: wallet_address });
   if (user) {
-    return res.status(200).json({
+    return res.json({
+      success: true,
       message: 'Nonce is available',
-      data: {
+      user: {
         id: user.id,
         email: user.email,
         nonce: user.nonce
@@ -61,9 +69,10 @@ router.get('/:wallet_address/nonce', async (req, res) => {
     });
   }
   else {
-    return res.status(404).json({
+    return res.json({
+      success: false,
       message: 'Nonce cannot be found',
-      data: false
+      user: false
     });
   }
 });
@@ -108,7 +117,7 @@ router.post('/:wallet_address/signature', (req, res) => {
                   _id: user._id,
                   address: user.address
               }, process.env.JWT_SECRET, {expiresIn: '6h'});
-              res.status(200).json({
+              res.json({
                   success: true,
                   token: `Bearer ${token}`,
                   user: user,
