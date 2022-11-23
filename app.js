@@ -6,6 +6,7 @@ var logger = require('morgan');
 const Web3 = require('web3');
 const contract = require("@truffle/contract");
 const artifacts = require('./build/contracts/OpenSign.json');
+const mongoose = require("mongoose")
 require('dotenv').config()
 
 var indexRouter = require('./routes/index');
@@ -36,13 +37,24 @@ if (typeof web3 !== 'undefined') {
 }
 
 async function initApplication(callback) {
-  const accounts = await web3.eth.getAccounts();
+  mongoose.connect(process.env.MONGODB, { useUnifiedTopology: true }, async (err,client) => {
+    if (err) {
+      console.log(err);
+      return err;
+    }
 
-  const OpenSignContract = contract(artifacts)
-  OpenSignContract.setProvider(web3.currentProvider)
-  const openSignInstance = await OpenSignContract.deployed();
+    console.log("Connected to MongoDB Database.")
 
-  callback({accounts, openSignInstance});
+    const accounts = await web3.eth.getAccounts();
+    const mongoClient = client;
+
+    const OpenSignContract = contract(artifacts)
+    OpenSignContract.setProvider(web3.currentProvider)
+    const openSignInstance = await OpenSignContract.deployed();
+
+    callback({accounts, mongoClient, openSignInstance});
+  });
+
 } 
 
 // catch 404 and forward to error handler

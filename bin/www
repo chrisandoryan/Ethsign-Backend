@@ -28,6 +28,7 @@ var server = http.createServer(app);
 app.initApplication((init) => {
   app.accounts = init.accounts;
   app.openSignInstance = init.openSignInstance;
+  app.mongoClient = init.mongoClient;
 
   server.listen(port);
   server.on('error', onError);

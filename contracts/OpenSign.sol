@@ -25,7 +25,7 @@ contract OpenSign{
         documents[keccak256(id)].signatures.push(msg.sender);
     }
     
-    function getSignatures(bytes memory id) public view returns (address[] memory) {
-        return documents[keccak256(id)].signatures;
+    function getSignatures(bytes memory doc_id) public view returns (address[] memory) {
+        return documents[keccak256(doc_id)].signatures;
     }
 }
