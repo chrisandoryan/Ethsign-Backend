@@ -137,7 +137,7 @@ router.post('/sign/:document_id', async function (req, res, next) {
   else {
     res.json({
       success: false,
-      message: "The requested document is not available, you have signed it previously, or you don't have permission to sign it."
+      message: "The requested document is not available, you have already signed it, or you don't have permission to sign it."
     })
   }
 })
