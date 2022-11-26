@@ -5,6 +5,7 @@ const { storage } = require('../lib/upload');
 const { ipfs } = require('../lib/ipfs');
 const Document = require('../database/Document');
 const crypto = require('crypto');
+const { arrayEquals } = require('../lib/utils');
 
 var router = express.Router();
 
@@ -127,10 +128,23 @@ router.post('/sign/:document_id', async function (req, res, next) {
     openSign.signDocument(document_id, { from: user.wallet_address })
       .then(async (_result) => {
         document.signed_addresses.push(user.wallet_address);
+        if (arrayEquals(document.signed_addresses, document.signer_addresses)) {
+          let lock_status = true;
+          document.is_locked = lock_status;
+          openSign.lockDocument(document_id, lock_status, { from: user.wallet_address })
+            .then(async (_result) => {
+
+            })
+            .catch((_error) => {
+              
+            });
+        }
         document.save();
+
         return res.json({
           success: true,
           doc_id: document_id,
+          sign_lock: document.is_locked
         });
       });
   }

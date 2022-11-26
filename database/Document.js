@@ -9,6 +9,10 @@ const schema = mongoose.Schema({
     uploader_address: String,
     signer_addresses: Array,
     signed_addresses: Array,
+    is_locked: {
+        type: Boolean,
+        default: false
+    }
 })
 
 module.exports = mongoose.model("Document", schema)

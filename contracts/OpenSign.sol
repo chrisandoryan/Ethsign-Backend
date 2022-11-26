@@ -6,6 +6,7 @@ contract OpenSign{
         uint timestamp;
         bytes ipfs_hash;
         address[] signatures;
+        bool lock_sign;
     }
 
     // mappings   
@@ -17,12 +18,18 @@ contract OpenSign{
         address[] memory sender = new address[](1);
         sender[0] = msg.sender;
 
-        documents[keccak256(doc_id)] = Document(block.timestamp, ipfs_hash, sender);
+        documents[keccak256(doc_id)] = Document(block.timestamp, ipfs_hash, sender, false);
     }
 
     function signDocument(bytes memory doc_id) public {
-        users[msg.sender].push(doc_id);
-        documents[keccak256(doc_id)].signatures.push(msg.sender);
+        if (documents[keccak256(doc_id)].lock_sign == false) {
+            users[msg.sender].push(doc_id);
+            documents[keccak256(doc_id)].signatures.push(msg.sender);
+        }
+    }
+
+    function lockDocument(bytes memory doc_id, bool lock_sign) public {
+        documents[keccak256(doc_id)].lock_sign = lock_sign;
     }
     
     function getSignatures(bytes memory doc_id) public view returns (address[] memory) {
