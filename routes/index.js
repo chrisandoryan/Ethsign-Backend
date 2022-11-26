@@ -34,7 +34,7 @@ router.post('/upload', multer({
   const user = req.user;
   let file = req.file ? req.file.buffer : false;
   let doc_title = req.body.document_title;
-  let signers = req.body.signer_ids;
+  let signers = req.body.signer_ids ?? [];
 
   // Add the uploader as the signer as well
   signers.push(user.wallet_address);
@@ -99,7 +99,8 @@ router.get('/documents/:document_id', async function (req, res, next) {
         return res.json({
           success: true,
           file_type: document.file_type,
-          document: buffer_file
+          document: buffer_file,
+          is_locked: document.is_locked
         })
       }      
     } catch (error) {
@@ -133,10 +134,10 @@ router.post('/sign/:document_id', async function (req, res, next) {
           document.is_locked = lock_status;
           openSign.lockDocument(document_id, lock_status, { from: user.wallet_address })
             .then(async (_result) => {
-
+              console.log(_result);
             })
             .catch((_error) => {
-              
+              console.log(_error);
             });
         }
         document.save();
