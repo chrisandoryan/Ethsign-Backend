@@ -1,17 +1,41 @@
 var express = require('express');
 var multer = require("multer");
 
+const fs = require('fs');
 const { storage } = require('../lib/upload');
 const { ipfs } = require('../lib/ipfs');
 const Document = require('../database/Document');
 const crypto = require('crypto');
-const { arrayEquals } = require('../lib/utils');
+const { arrayEquals, tarballed } = require('../lib/utils');
+const { Blob } = require('node:buffer');
 
 var router = express.Router();
 
 router.get('/documents', async function (req, res, next) {
   const user = req.user;
-  let documents = await Document.find({ uploader_id: user.id });
+  let documents = await Document.aggregate([
+    {
+      $match: {
+        uploader_address: user.wallet_address,
+      }
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "signer_addresses",
+        foreignField: "wallet_address",
+        as: "signers"
+      }
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "signed_addresses",
+        foreignField: "wallet_address",
+        as: "signeds"
+      }
+    }
+  ]);
 
   if (documents) {
     return res.json({
@@ -87,22 +111,68 @@ router.get('/documents/:document_id', async function (req, res, next) {
   const user = req.user;
   let document_id = req.params.document_id;
 
-  let document = await Document.findOne({ 
-    doc_id: document_id, 
-    uploader_address: user.wallet_address, 
-  });
+  let document = await Document.aggregate([
+    {
+      $match: {
+        doc_id: document_id,
+        uploader_address: user.wallet_address,
+      }
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "signer_addresses",
+        foreignField: "wallet_address",
+        as: "signers"
+      }
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "signed_addresses",
+        foreignField: "wallet_address",
+        as: "signeds"
+      }
+    }
+  ]);
 
   if (document) {
+    document = document[0];
+    console.log(document);
+
     try {
-      for await (const buf of ipfs.get(document.ipfs_hash)) {
-        let buffer_file = buf.toString('base64');
-        return res.json({
-          success: true,
+      // const buffers = await pipe(
+      //   ipfs.get(document.ipfs_hash),
+      //   (source) => all(source)
+      // )
+      // const the_file = Buffer.concat(buffers).toString('base64url');
+      // console.log(the_file);
+
+      
+      // let buffer_file = "";
+      // for await (const buf of ipfs.get(document.ipfs_hash)) {
+      //   buffer_file += buf.toString('base64');
+      // }
+
+      const content = [];
+      for await (const chunk of ipfs.cat(document.ipfs_hash)) {
+          content.push(chunk);
+      }
+      const file_buffer = Buffer.concat(content).toString("base64");
+
+      return res.json({
+        success: true,
+        document: {
+          title: document.doc_title,
           file_type: document.file_type,
-          document: buffer_file,
-          is_locked: document.is_locked
-        })
-      }      
+          file_size: document.file_size,
+          signeds: document.signeds,
+          signers: document.signers,
+          file_buffer: `data:${document.file_type};base64,${file_buffer}`,
+          is_locked: document.is_locked,
+        }
+      })
+
     } catch (error) {
       console.log(error);
       return res.status(500).json({
@@ -112,16 +182,22 @@ router.get('/documents/:document_id', async function (req, res, next) {
     }
 
   }
+  else {
+    return res.json({
+      success: false,
+      message: "The document you're looking for cannot be found!"
+    })
+  }
 });
 
 router.post('/sign/:document_id', async function (req, res, next) {
   const user = req.user;
   let document_id = req.params.document_id;
 
-  let document = await Document.findOne({ 
-    doc_id: document_id, 
-    signer_addresses: user.wallet_address, 
-    signed_addresses: { "$ne": user.wallet_address } 
+  let document = await Document.findOne({
+    doc_id: document_id,
+    signer_addresses: user.wallet_address,
+    signed_addresses: { "$ne": user.wallet_address }
   });
 
   if (document) {
