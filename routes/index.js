@@ -6,7 +6,7 @@ const { storage } = require('../lib/upload');
 const { ipfs } = require('../lib/ipfs');
 const Document = require('../database/Document');
 const crypto = require('crypto');
-const { arrayEquals, tarballed } = require('../lib/utils');
+const { arrayEquals, tarballed, sameMembers } = require('../lib/utils');
 const { Blob } = require('node:buffer');
 
 var router = express.Router();
@@ -16,7 +16,7 @@ router.get('/documents', async function (req, res, next) {
   let documents = await Document.aggregate([
     {
       $match: {
-        uploader_address: user.wallet_address,
+        signer_addresses: user.wallet_address,
       }
     },
     {
@@ -61,7 +61,7 @@ router.post('/upload', multer({
   let signers = req.body.signer_ids ?? [];
 
   // Add the uploader as the signer as well
-  signers.push(user.wallet_address);
+  // signers.push(user.wallet_address);
 
   if (!file) {
     return res.status(400).send({
@@ -115,7 +115,7 @@ router.get('/documents/:document_id', async function (req, res, next) {
     {
       $match: {
         doc_id: document_id,
-        uploader_address: user.wallet_address,
+        signer_addresses: user.wallet_address,
       }
     },
     {
@@ -192,7 +192,8 @@ router.post('/sign/:document_id', async function (req, res, next) {
     openSign.signDocument(document_id, { from: user.wallet_address })
       .then(async (_result) => {
         document.signed_addresses.push(user.wallet_address);
-        if (arrayEquals(document.signed_addresses, document.signer_addresses)) {
+        
+        if (sameMembers(document.signed_addresses, document.signer_addresses)) {
           let lock_status = true;
           document.is_locked = lock_status;
           openSign.lockDocument(document_id, lock_status, { from: user.wallet_address })
