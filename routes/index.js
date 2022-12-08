@@ -138,22 +138,8 @@ router.get('/documents/:document_id', async function (req, res, next) {
 
   if (document) {
     document = document[0];
-    console.log(document);
 
     try {
-      // const buffers = await pipe(
-      //   ipfs.get(document.ipfs_hash),
-      //   (source) => all(source)
-      // )
-      // const the_file = Buffer.concat(buffers).toString('base64url');
-      // console.log(the_file);
-
-      
-      // let buffer_file = "";
-      // for await (const buf of ipfs.get(document.ipfs_hash)) {
-      //   buffer_file += buf.toString('base64');
-      // }
-
       const content = [];
       for await (const chunk of ipfs.cat(document.ipfs_hash)) {
           content.push(chunk);
@@ -166,6 +152,7 @@ router.get('/documents/:document_id', async function (req, res, next) {
           title: document.doc_title,
           file_type: document.file_type,
           file_size: document.file_size,
+          doc_id: document.doc_id,
           signeds: document.signeds,
           signers: document.signers,
           file_buffer: `data:${document.file_type};base64,${file_buffer}`,
